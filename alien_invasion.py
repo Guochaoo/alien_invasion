@@ -52,6 +52,29 @@ class AlienInvasion:
 
             self._update_screen()
             self.clock.tick(60)
+    
+    def _start_game(self):
+        """开始新游戏"""
+        #还原游戏设置
+        self.settings.initialize_dynamic_settings()
+
+        #重置游戏的统计信息
+        self.stats.reset_stats()
+        self.game_active = True
+        self.sb.prep_score()
+        self.sb.prep_level()
+        self.sb.prep_ships()
+
+        #清空外星人列表和子弹列表
+        self.aliens.empty()
+        self.bullets.empty()
+
+        #创建一个新的外星舰队，并将飞船放在屏幕底部的中央
+        self._create_fleet()
+        self.ship.center_ship()
+
+        #隐藏光标
+        pygame.mouse.set_visible(False)
 
     def _check_events(self):
         """响应按键和鼠标事件"""
@@ -70,23 +93,8 @@ class AlienInvasion:
         """在玩家单击Play按钮时开始新游戏"""
         button_clicked = self.play_button.rect.collidepoint(mouse_pos)
         if button_clicked and not self.game_active:
-             #还原游戏设置
-             self.settings.initialize_dynamic_settings()
-             #重置游戏的统计信息
-             self.stats.reset_stats()
-             self.game_active = True
-             self.sb.prep_score()
-
-             #清空外星人列表和子弹列表
-             self.aliens.empty()
-             self.bullets.empty()
-
-             #创建一个新的外星舰队，并将飞船放在屏幕底部的中央
-             self._create_fleet()
-             self.ship.center_ship()
-
-             #隐藏光标
-             pygame.mouse.set_visible(False)
+                self._start_game()
+             
 
     def _check_keydown_events(self, event):
         """响应按下"""
@@ -147,8 +155,9 @@ class AlienInvasion:
     def _ship_hit(self):
          """响应飞船和外星人的碰撞"""
          if self.stats.ships_left > 0:
-            #将ships_left减1
+            #将ships_left减1并更新记分牌
             self.stats.ships_left -= 1
+            self.sb.prep_ships()
 
             #清空外星人列表和子弹列表
             self.aliens.empty()
@@ -203,12 +212,17 @@ class AlienInvasion:
              for aliens in collisions.values():
                   self.stats.score += self.settings.alien_points * len(aliens)
              self.sb.prep_score()
+             self.sb.check_high_score()
         
         if not self.aliens:
               #删除现有的子弹并创建一个新的外星舰队
               self.bullets.empty()
               self._create_fleet()
               self.settings.increase_speed()
+
+              #提高等级
+              self.stats.level += 1
+              self.sb.prep_level()
     
     def _check_aliens_bottom(self):
          """检查是否有外星人到达了屏幕的下边缘"""
